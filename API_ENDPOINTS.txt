@@ -1,0 +1,390 @@
+============================================
+HOTEL API - ALL ENDPOINTS (31 Total)
+Base URL: http://localhost:3000
+============================================
+
+
+============================================
+AUTH API (8 Endpoints)
+============================================
+
+1. REGISTER WITH EMAIL
+-----------------------
+POST http://localhost:3000/api/auth/register/email
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "email": "john.doe@gmail.com",
+    "password": "Test@123",
+    "firstName": "John",
+    "lastName": "Doe",
+    "phone": "+971501234567"
+}
+
+
+2. LOGIN WITH EMAIL
+-------------------
+POST http://localhost:3000/api/auth/login/email
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "email": "john.doe@gmail.com",
+    "password": "Test@123"
+}
+
+
+3. SEND OTP
+-----------
+POST http://localhost:3000/api/auth/send-otp
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "phone": "+971501234567"
+}
+
+
+4. VERIFY OTP
+-------------
+POST http://localhost:3000/api/auth/verify-otp
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "firebaseIdToken": "firebase-token-from-frontend",
+    "phone": "+971501234567"
+}
+
+
+5. FORGOT PASSWORD
+------------------
+POST http://localhost:3000/api/auth/forgot-password
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "email": "john.doe@gmail.com"
+}
+
+
+6. RESEND VERIFICATION (Protected)
+----------------------------------
+POST http://localhost:3000/api/auth/resend-verification
+Headers:
+    Content-Type: application/json
+    Authorization: Bearer <your-jwt-token>
+Body: (none)
+
+
+7. LOGOUT (Protected)
+---------------------
+POST http://localhost:3000/api/auth/logout
+Headers:
+    Authorization: Bearer <your-jwt-token>
+Body: (none)
+
+
+8. GET CURRENT USER (Protected)
+-------------------------------
+GET http://localhost:3000/api/auth/me
+Headers:
+    Authorization: Bearer <your-jwt-token>
+
+
+
+============================================
+PROFILE API (7 Endpoints) - All Protected
+============================================
+
+1. GET PROFILE
+--------------
+GET http://localhost:3000/api/profile
+Headers:
+    Authorization: Bearer <your-jwt-token>
+
+
+2. UPDATE PROFILE
+-----------------
+PUT http://localhost:3000/api/profile
+Headers:
+    Content-Type: application/json
+    Authorization: Bearer <your-jwt-token>
+Body:
+{
+    "firstName": "John",
+    "lastName": "Doe",
+    "profileImage": "https://example.com/photo.jpg",
+    "dateOfBirth": "1990-05-15",
+    "gender": "male",
+    "address": "123 Main Street",
+    "city": "Dubai",
+    "country": "UAE"
+}
+
+
+3. UPDATE EMAIL
+---------------
+PUT http://localhost:3000/api/profile/email
+Headers:
+    Content-Type: application/json
+    Authorization: Bearer <your-jwt-token>
+Body:
+{
+    "email": "newemail@gmail.com"
+}
+
+
+4. UPDATE PHONE
+---------------
+PUT http://localhost:3000/api/profile/phone
+Headers:
+    Content-Type: application/json
+    Authorization: Bearer <your-jwt-token>
+Body:
+{
+    "phone": "+971509876543"
+}
+
+
+5. DELETE ACCOUNT
+-----------------
+DELETE http://localhost:3000/api/profile
+Headers:
+    Content-Type: application/json
+    Authorization: Bearer <your-jwt-token>
+Body:
+{
+    "confirmDelete": true
+}
+
+
+6. GET SETTINGS
+---------------
+GET http://localhost:3000/api/profile/settings
+Headers:
+    Authorization: Bearer <your-jwt-token>
+
+
+7. UPDATE SETTINGS
+------------------
+PUT http://localhost:3000/api/profile/settings
+Headers:
+    Content-Type: application/json
+    Authorization: Bearer <your-jwt-token>
+Body:
+{
+    "notifications": {
+        "email": true,
+        "push": true,
+        "sms": false,
+        "promotions": false
+    },
+    "preferences": {
+        "language": "en",
+        "currency": "USD"
+    }
+}
+
+
+
+============================================
+GOOGLE API (7 Endpoints)
+============================================
+
+1. HOME DASHBOARD
+-----------------
+GET http://localhost:3000/api/google/home
+
+
+2. SEARCH HOTELS
+----------------
+GET http://localhost:3000/api/google/search?query=hotels in dubai&minRating=4&maxPrice=3
+
+
+3. AUTOCOMPLETE
+---------------
+GET http://localhost:3000/api/google/autocomplete?input=dub
+
+
+4. HOTEL DETAILS
+----------------
+GET http://localhost:3000/api/google/details/ChIJN1t_tDeuEmsRUsoyG83frY4
+
+
+5. NEARBY HOTELS
+----------------
+GET http://localhost:3000/api/google/nearby?lat=25.2048&lng=55.2708&radius=5000
+
+
+6. GET PHOTO
+------------
+GET http://localhost:3000/api/google/photo?reference=photo_reference_here&maxwidth=400
+
+
+7. GET OFFERS
+-------------
+GET http://localhost:3000/api/google/offers
+
+
+
+============================================
+TBO API (9 Endpoints)
+============================================
+
+1. SEARCH HOTELS
+----------------
+POST http://localhost:3000/api/tbo/search
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "cityCode": "DXB",
+    "checkIn": "2024-03-01",
+    "checkOut": "2024-03-05",
+    "rooms": [
+        {
+            "adults": 2,
+            "children": 0
+        }
+    ],
+    "nationality": "IN",
+    "minPrice": 100,
+    "maxPrice": 500,
+    "minRating": 4,
+    "starRating": 5,
+    "amenities": "wifi,pool"
+}
+
+
+2. HOTEL DETAILS
+----------------
+POST http://localhost:3000/api/tbo/details
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "hotelCode": "TBO001",
+    "searchId": "MOCK_SEARCH_123"
+}
+
+
+3. ROOM SELECTION / RATES
+-------------------------
+POST http://localhost:3000/api/tbo/rooms
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "hotelCode": "TBO001",
+    "searchId": "MOCK_SEARCH_123",
+    "checkIn": "2024-03-01",
+    "checkOut": "2024-03-05",
+    "rooms": [
+        {
+            "adults": 2,
+            "children": 0
+        }
+    ]
+}
+
+
+4. PRE-BOOK
+-----------
+POST http://localhost:3000/api/tbo/prebook
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "searchId": "MOCK_SEARCH_123",
+    "hotelCode": "TBO001",
+    "roomIndex": 1,
+    "ratePlanCode": "STD_RATE"
+}
+
+
+5. CONFIRM BOOKING
+------------------
+POST http://localhost:3000/api/tbo/book
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "preBookId": "PREBOOK_123456",
+    "guests": [
+        {
+            "title": "Mr",
+            "firstName": "John",
+            "lastName": "Doe",
+            "email": "john.doe@gmail.com",
+            "phone": "+971501234567"
+        }
+    ],
+    "specialRequest": "Late checkout please",
+    "paymentMethod": "Credit Card"
+}
+
+
+6. CANCEL BOOKING
+-----------------
+POST http://localhost:3000/api/tbo/cancel
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "bookingId": "BK123456",
+    "remarks": "Change of plans"
+}
+
+
+7. GET BOOKING DETAILS
+----------------------
+GET http://localhost:3000/api/tbo/booking/BK123456
+
+
+8. GET CITIES
+-------------
+GET http://localhost:3000/api/tbo/cities/AE
+
+
+9. GET COUNTRIES
+----------------
+GET http://localhost:3000/api/tbo/countries
+
+
+
+============================================
+UTILITY ENDPOINTS
+============================================
+
+HEALTH CHECK
+------------
+GET http://localhost:3000/health
+
+
+API DOCUMENTATION
+-----------------
+GET http://localhost:3000
+
+
+
+============================================
+SAMPLE JWT TOKEN (for testing)
+============================================
+After login, you will receive a token like:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1dWlkIjoiMTIzNDU2Nzg5MCIsImVtYWlsIjoiam9obkBnbWFpbC5jb20ifQ.xxxxx
+
+Use it in headers:
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+
+
+============================================
+NOTES
+============================================
+1. All POST/PUT requests need: Content-Type: application/json
+2. Protected routes need: Authorization: Bearer <token>
+3. Replace <your-jwt-token> with actual token from login
+4. TBO and Google APIs return mock data if no API keys configured
+
