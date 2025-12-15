@@ -297,6 +297,7 @@ const profileController = {
                     notifications: notifications || {},
                     privacy: privacy || {},
                     preferences: preferences || {}
+                    
                 }
             });
 
@@ -316,7 +317,10 @@ const profileController = {
 module.exports = profileController;
 
 
-module.exports=profileController;module.exports=profileController; module.exports=profileController;
+
+
+
+
 
 
 

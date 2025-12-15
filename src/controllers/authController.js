@@ -321,6 +321,7 @@ const authController = {
             let message = 'Failed to send reset email';
             if (error.code === 'auth/user-not-found') {
                 message = 'No user found with this email';
+                
             }
 
             res.status(400).json({

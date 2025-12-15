@@ -40,6 +40,7 @@ const UserModel = {
     async create(userData) {
         const uuid = uuidv4();
         const { firebaseUid, email, phone, firstName, lastName } = userData;
+    
 
         const [result] = await pool.query(`
             INSERT INTO users (uuid, firebase_uid, email, phone, first_name, last_name)
@@ -93,11 +94,13 @@ const UserModel = {
         );
         return rows[0] || null;
     },
+    
 
-    // Update user
+    //
     async update(uuid, updateData) {
         const fields = [];
         const values = [];
+        
 
         Object.keys(updateData).forEach(key => {
             // Convert camelCase to snake_case
@@ -107,13 +110,17 @@ const UserModel = {
         });
 
         if (fields.length === 0) return null;
+        //if(fields.length===0) return null;
+      //  values.push(uuid);
 
         values.push(uuid);
 
         const [result] = await pool.query(
+
             `UPDATE users SET ${fields.join(', ')} WHERE uuid = ?`,
             values
         );
+        
 
         return result.affectedRows > 0;
     },
@@ -126,7 +133,7 @@ const UserModel = {
         );
     },
 
-    // Delete user (soft delete)
+    // Delete user (soft delete) delete (soft delt)
     async delete(uuid) {
         const [result] = await pool.query(
             'UPDATE users SET is_active = FALSE WHERE uuid = ?',
@@ -142,6 +149,7 @@ const UserModel = {
             [uuid]
         );
         return result.affectedRows > 0;
+        
     },
 
     // Get all users (for admin)
@@ -167,4 +175,9 @@ const UserModel = {
 };
 
 module.exports = { UserModel, createUsersTable };
+
+
+
+
+
 
