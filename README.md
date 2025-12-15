@@ -1,6 +1,5 @@
-<<<<<<< HEAD
-# DevelopmentCodeBackend
-=======
+
+
 # Hotel API
 
 Simple Hotel API with Google Maps and TBO integration.
@@ -141,4 +140,4 @@ TBO_USERNAME=your-username
 TBO_PASSWORD=your-password
 TBO_CLIENT_ID=your-client-id
 ```
->>>>>>> 479a8c5 (first commit)
+
