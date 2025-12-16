@@ -10,7 +10,7 @@ const GOOGLE_BASE_URL = config.google.baseUrl;
 const API_KEY = config.google.apiKey;
 
 // Check if using mock data
-const USE_MOCK = !API_KEY || API_KEY === 'your-google-api-key';
+const USE_MOCK = !API_KEY || API_KEY === 'AIzaSyCRI5ljDv-LzQWCJ7vgrB3xX0NyK-eN5fw';
 
 // Mock data for testing
 const mockData = {
