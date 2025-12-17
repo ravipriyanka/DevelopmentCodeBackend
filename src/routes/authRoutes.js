@@ -4,7 +4,6 @@ const { authenticate } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-
 // ==================== PUBLIC ROUTES ====================
 
 // Register with email
@@ -23,10 +22,21 @@ router.post('/send-otp', authController.sendOtp);
 // POST /api/auth/verify-otp
 router.post('/verify-otp', authController.verifyOtp);
 
-// Forgot password
+// Forgot password (send OTP via Nodemailer)
 // POST /api/auth/forgot-password
 router.post('/forgot-password', authController.forgotPassword);
 
+// Reset password (verify OTP + tell frontend to change password in Firebase)
+// POST /api/auth/reset-password
+router.post('/reset-password', authController.resetPassword);
+
+// Send email OTP
+// POST /api/auth/send-email-otp
+router.post('/send-email-otp', authController.sendEmailOtp);
+
+// Verify email OTP
+// POST /api/auth/verify-email-otp
+router.post('/verify-email-otp', authController.verifyEmailOtp);
 
 // ==================== PROTECTED ROUTES ====================
 
@@ -43,11 +53,3 @@ router.post('/logout', authenticate, authController.logout);
 router.get('/me', authenticate, authController.getCurrentUser);
 
 module.exports = router;
-
-
-
-
-
-
-
-
