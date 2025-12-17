@@ -10,46 +10,44 @@ const router = express.Router();
 // POST /api/auth/register/email
 router.post('/register/email', authController.registerWithEmail);
 
+// Register with phone
+// POST /api/auth/register/phone
+router.post('/register/phone', authController.registerWithPhone);
+
 // Login with email
 // POST /api/auth/login/email
 router.post('/login/email', authController.loginWithEmail);
 
-// Send OTP to phone
-// POST /api/auth/send-otp
+// Send OTP to phone (Firebase phone flow info)
 router.post('/send-otp', authController.sendOtp);
 
-// Verify OTP / Phone login
-// POST /api/auth/verify-otp
+// Verify OTP / Phone login (Firebase phone flow)
 router.post('/verify-otp', authController.verifyOtp);
 
 // Forgot password (send OTP via Nodemailer)
-// POST /api/auth/forgot-password
 router.post('/forgot-password', authController.forgotPassword);
 
-// Reset password (verify OTP + tell frontend to change password in Firebase)
-// POST /api/auth/reset-password
+// Reset password (verify OTP)
 router.post('/reset-password', authController.resetPassword);
 
-// Send email OTP
-// POST /api/auth/send-email-otp
+// Send email OTP (manual)
 router.post('/send-email-otp', authController.sendEmailOtp);
 
 // Verify email OTP
-// POST /api/auth/verify-email-otp
 router.post('/verify-email-otp', authController.verifyEmailOtp);
+
+// Verify phone OTP (our own OTP from register/email or register/phone)
+router.post('/verify-phone-otp', authController.verifyPhoneOtp);
 
 // ==================== PROTECTED ROUTES ====================
 
 // Resend verification email
-// POST /api/auth/resend-verification
 router.post('/resend-verification', authenticate, authController.resendVerification);
 
 // Logout
-// POST /api/auth/logout
 router.post('/logout', authenticate, authController.logout);
 
 // Get current user
-// GET /api/auth/me
 router.get('/me', authenticate, authController.getCurrentUser);
 
 module.exports = router;

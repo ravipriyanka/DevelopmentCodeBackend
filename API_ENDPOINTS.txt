@@ -187,6 +187,30 @@ Body:
     }
 }
 
+9. VERIFY EMAIL OTP
+-------------------
+POST http://localhost:3000/api/auth/verify-email-otp
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "email": "john.doe@gmail.com",
+    "otp": "123456"
+}
+
+
+10. VERIFY PHONE OTP (Custom OTP)
+---------------------------------
+POST http://localhost:3000/api/auth/verify-phone-otp
+Headers:
+    Content-Type: application/json
+Body:
+{
+    "phone": "+971501234567",
+    "otp": "123456"
+}
+
+
 
 
 ============================================

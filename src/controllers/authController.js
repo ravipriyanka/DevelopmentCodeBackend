@@ -3,7 +3,6 @@ const {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     sendEmailVerification,
-    // sendPasswordResetEmail, // no longer using Firebase reset email
     signOut
 } = require('firebase/auth');
 const { UserModel } = require('../models/userModel');
@@ -67,20 +66,20 @@ const authController = {
             const user = await UserModel.findByUuid(uuid);
 
             // Generate OTP for email
-            const otp = generateOtp();
-            const expiresAt = getExpiryTime();
+            const emailOtp = generateOtp();
+            const emailOtpExpiresAt = getExpiryTime();
 
-            // Save OTP in DB
+            // Save email OTP in DB
             await UserModel.update(user.uuid, {
-                email_otp: otp,
-                email_otp_expires_at: expiresAt
+                email_otp: emailOtp,
+                email_otp_expires_at: emailOtpExpiresAt
             });
 
-            // Send OTP email
+            // Send email OTP
             await sendEmail({
                 to: user.email,
                 subject: 'Your registration OTP',
-                text: `Your OTP code is ${otp}. It will expire in 10 minutes.`
+                text: `Your email OTP code is ${emailOtp}. It will expire in 10 minutes.`
             });
 
             // Generate JWT
@@ -96,7 +95,8 @@ const authController = {
                         firstName: user.first_name,
                         lastName: user.last_name,
                         phone: user.phone,
-                        isEmailVerified: false
+                        isEmailVerified: false,
+                        isPhoneVerified: user.is_phone_verified
                     },
                     token: token
                 }
@@ -105,7 +105,6 @@ const authController = {
         } catch (error) {
             console.log('Register error:', error.message);
             
-            // Handle Firebase errors
             let message = 'Registration failed';
             if (error.code === 'auth/email-already-in-use') {
                 message = 'Email is already registered';
@@ -113,6 +112,88 @@ const authController = {
                 message = 'Password should be at least 6 characters';
             } else if (error.code === 'auth/invalid-email') {
                 message = 'Invalid email address';
+            }
+
+            res.status(400).json({
+                success: false,
+                message: message,
+                error: error.message
+            });
+        }
+    },
+
+    // ==================== REGISTER WITH PHONE ====================
+    // POST /api/auth/register/phone
+    async registerWithPhone(req, res) {
+        try {
+            const { phone, password } = req.body;
+
+            if (!phone || !password) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Phone and password are required'
+                });
+            }
+
+            // Check if user already exists by phone
+            const existingUser = await UserModel.findByPhone(phone);
+            if (existingUser) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'User with this phone already exists'
+                });
+            }
+
+            // Firebase needs an email, so create a fake one from phone
+            const fakeEmail = `${phone.replace(/[^0-9]/g, '')}@phone.local`;
+
+            const userCredential = await createUserWithEmailAndPassword(auth, fakeEmail, password);
+            const firebaseUser = userCredential.user;
+
+            // Create user in database
+            const { uuid } = await UserModel.create({
+                firebaseUid: firebaseUser.uid,
+                email: fakeEmail,
+                phone: phone
+            });
+
+            const user = await UserModel.findByUuid(uuid);
+
+            // Generate phone OTP only
+            const phoneOtp = generateOtp();
+            const phoneOtpExpiresAt = getExpiryTime();
+
+            await UserModel.update(user.uuid, {
+                phone_otp: phoneOtp,
+                phone_otp_expires_at: phoneOtpExpiresAt
+            });
+
+            // For now, log OTP (later send SMS)
+            console.log('PHONE OTP for', user.phone, 'is', phoneOtp);
+
+            const token = generateToken(user);
+
+            res.status(201).json({
+                success: true,
+                message: 'OTP sent to your phone. Please enter it to complete registration.',
+                data: {
+                    user: {
+                        uuid: user.uuid,
+                        phone: user.phone,
+                        isPhoneVerified: user.is_phone_verified
+                    },
+                    token: token
+                }
+            });
+
+        } catch (error) {
+            console.log('Register with phone error:', error.message);
+
+            let message = 'Registration failed';
+            if (error.code === 'auth/email-already-in-use') {
+                message = 'Phone is already registered';
+            } else if (error.code === 'auth/weak-password') {
+                message = 'Password should be at least 6 characters';
             }
 
             res.status(400).json({
@@ -136,14 +217,11 @@ const authController = {
                 });
             }
 
-            // Sign in with Firebase
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const firebaseUser = userCredential.user;
 
-            // Find user in database
             let user = await UserModel.findByFirebaseUid(firebaseUser.uid);
 
-            // If user not in database, create
             if (!user) {
                 const { uuid } = await UserModel.create({
                     firebaseUid: firebaseUser.uid,
@@ -152,15 +230,12 @@ const authController = {
                 user = await UserModel.findByUuid(uuid);
             }
 
-            // Update last login
             await UserModel.updateLastLogin(user.uuid);
 
-            // Update email verified status
             if (firebaseUser.emailVerified && !user.is_email_verified) {
                 await UserModel.update(user.uuid, { isEmailVerified: true });
             }
 
-            // Generate JWT
             const token = generateToken(user);
 
             res.json({
@@ -174,7 +249,8 @@ const authController = {
                         lastName: user.last_name,
                         phone: user.phone,
                         profileImage: user.profile_image,
-                        isEmailVerified: firebaseUser.emailVerified
+                        isEmailVerified: firebaseUser.emailVerified,
+                        isPhoneVerified: user.is_phone_verified
                     },
                     token: token
                 }
@@ -202,7 +278,7 @@ const authController = {
         }
     },
 
-    // ==================== SEND OTP TO PHONE ====================
+    // ==================== SEND OTP TO PHONE (Firebase phone info) ====================
     // POST /api/auth/send-otp
     async sendOtp(req, res) {
         try {
@@ -242,7 +318,7 @@ const authController = {
         }
     },
 
-    // ==================== VERIFY OTP / PHONE LOGIN ====================
+    // ==================== VERIFY OTP / PHONE LOGIN (Firebase phone flow) ====================
     // POST /api/auth/verify-otp
     async verifyOtp(req, res) {
         try {
@@ -255,24 +331,19 @@ const authController = {
                 });
             }
 
-            // Find or create user
             let user = await UserModel.findByPhone(phone);
 
             if (!user) {
                 const { uuid } = await UserModel.create({
-                    firebaseUid: firebaseIdToken.substring(0, 128), // placeholder
+                    firebaseUid: firebaseIdToken.substring(0, 128),
                     phone: phone
                 });
                 user = await UserModel.findByUuid(uuid);
             }
 
-            // Update phone verified
             await UserModel.update(user.uuid, { isPhoneVerified: true });
-
-            // Update last login
             await UserModel.updateLastLogin(user.uuid);
 
-            // Generate JWT
             const token = generateToken(user);
 
             res.json({
@@ -315,7 +386,6 @@ const authController = {
                 });
             }
 
-            // Check user in DB
             const user = await UserModel.findByEmail(email);
             if (!user) {
                 return res.status(404).json({
@@ -324,17 +394,14 @@ const authController = {
                 });
             }
 
-            // Generate OTP and expiry
             const otp = generateOtp();
             const expiresAt = getExpiryTime();
 
-            // Save OTP to DB
             await UserModel.update(user.uuid, {
                 password_reset_otp: otp,
                 password_reset_otp_expires_at: expiresAt
             });
 
-            // Send OTP email via Nodemailer
             await sendEmail({
                 to: email,
                 subject: 'Your password reset OTP',
@@ -402,10 +469,7 @@ const authController = {
                 });
             }
 
-            // Here you SHOULD change password in Firebase Auth on frontend
-            // using Firebase JS SDK (confirmPasswordReset / updatePassword). [web:223][web:220]
-
-            // Clear OTP fields
+            // Frontend should update password in Firebase (JS SDK).
             await UserModel.update(user.uuid, {
                 password_reset_otp: null,
                 password_reset_otp_expires_at: null
@@ -426,7 +490,7 @@ const authController = {
         }
     },
 
-    // ==================== SEND EMAIL OTP ====================
+    // ==================== SEND EMAIL OTP (manual) ====================
     // POST /api/auth/send-email-otp
     async sendEmailOtp(req, res) {
         try {
@@ -537,6 +601,72 @@ const authController = {
             res.status(500).json({
                 success: false,
                 message: 'Failed to verify email OTP',
+                error: error.message
+            });
+        }
+    },
+
+    // ==================== VERIFY PHONE OTP (our own OTP) ====================
+    // POST /api/auth/verify-phone-otp
+    async verifyPhoneOtp(req, res) {
+        try {
+            const { phone, otp } = req.body;
+
+            if (!phone || !otp) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Phone and OTP are required'
+                });
+            }
+
+            const user = await UserModel.findByPhone(phone);
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+
+            if (!user.phone_otp || !user.phone_otp_expires_at) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'No OTP requested or OTP expired'
+                });
+            }
+
+            const now = new Date();
+            const expiresAt = new Date(user.phone_otp_expires_at);
+
+            if (now > expiresAt) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'OTP expired'
+                });
+            }
+
+            if (user.phone_otp !== otp) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid OTP'
+                });
+            }
+
+            await UserModel.update(user.uuid, {
+                is_phone_verified: 1,
+                phone_otp: null,
+                phone_otp_expires_at: null
+            });
+
+            res.json({
+                success: true,
+                message: 'Phone OTP verified successfully'
+            });
+
+        } catch (error) {
+            console.log('Verify phone OTP error:', error.message);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to verify phone OTP',
                 error: error.message
             });
         }
