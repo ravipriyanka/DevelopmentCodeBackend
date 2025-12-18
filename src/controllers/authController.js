@@ -9,6 +9,8 @@ const { UserModel } = require('../models/userModel');
 const jwt = require('jsonwebtoken');
 const { generateOtp, getExpiryTime } = require('../utils/otp');   // OTP helper
 const { sendEmail } = require('../config/mailer');                // Nodemailer helper
+// Twilio SMS disabled for now
+// const { sendOtpSms } = require('../services/smsService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
@@ -168,8 +170,9 @@ const authController = {
                 phone_otp_expires_at: phoneOtpExpiresAt
             });
 
-            // For now, log OTP (later send SMS)
+            // Log OTP (SMS disabled for now)
             console.log('PHONE OTP for', user.phone, 'is', phoneOtp);
+            // await sendOtpSms(user.phone, phoneOtp);
 
             const token = generateToken(user);
 
@@ -374,6 +377,7 @@ const authController = {
     },
 
     // ==================== FORGOT PASSWORD (SEND OTP VIA NODEMAILER) ====================
+    // STEP 1: send OTP
     // POST /api/auth/forgot-password
     async forgotPassword(req, res) {
         try {
@@ -399,7 +403,8 @@ const authController = {
 
             await UserModel.update(user.uuid, {
                 password_reset_otp: otp,
-                password_reset_otp_expires_at: expiresAt
+                password_reset_otp_expires_at: expiresAt,
+                can_reset_password: 0    // reset flag
             });
 
             await sendEmail({
@@ -424,16 +429,17 @@ const authController = {
         }
     },
 
-    // ==================== RESET PASSWORD (VERIFY OTP) ====================
-    // POST /api/auth/reset-password
-    async resetPassword(req, res) {
+    // ==================== VERIFY FORGOT PASSWORD OTP ====================
+    // STEP 2: verify OTP only
+    // POST /api/auth/verify-forgot-otp
+    async verifyForgotOtp(req, res) {
         try {
-            const { email, otp, newPassword } = req.body;
+            const { email, otp } = req.body;
 
-            if (!email || !otp || !newPassword) {
+            if (!email || !otp) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Email, OTP and newPassword are required'
+                    message: 'Email and OTP are required'
                 });
             }
 
@@ -469,22 +475,73 @@ const authController = {
                 });
             }
 
-            // Frontend should update password in Firebase (JS SDK).
+            // Mark OTP as used and allow reset
             await UserModel.update(user.uuid, {
                 password_reset_otp: null,
-                password_reset_otp_expires_at: null
+                password_reset_otp_expires_at: null,
+                can_reset_password: 1
             });
 
             res.json({
                 success: true,
-                message: 'Password reset OTP verified. Now update password in Firebase/front-end.'
+                message: 'OTP verified. You can now set a new password.'
             });
 
         } catch (error) {
-            console.log('Reset password error:', error.message);
+            console.log('Verify forgot OTP error:', error.message);
             res.status(500).json({
                 success: false,
-                message: 'Failed to reset password',
+                message: 'Failed to verify OTP',
+                error: error.message
+            });
+        }
+    },
+
+    // ==================== SET NEW PASSWORD AFTER FORGOT FLOW ====================
+    // STEP 3: only new password
+    // POST /api/auth/set-new-password
+    async setNewPassword(req, res) {
+        try {
+            const { email, newPassword } = req.body;
+
+            if (!email || !newPassword) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email and newPassword are required'
+                });
+            }
+
+            const user = await UserModel.findByEmail(email);
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+
+            if (!user.can_reset_password) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'OTP not verified or reset not allowed'
+                });
+            }
+
+            // Here you should actually update password in Firebase from frontend
+            // Backend only clears the flag so this flow is one-time.
+            await UserModel.update(user.uuid, {
+                can_reset_password: 0
+            });
+
+            res.json({
+                success: true,
+                message: 'New password accepted. Please update it in Firebase/front-end.'
+            });
+
+        } catch (error) {
+            console.log('Set new password error:', error.message);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to set new password',
                 error: error.message
             });
         }
